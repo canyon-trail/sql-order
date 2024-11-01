@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlOrder", "SqlOrder\SqlOrder.csproj", "{79377F88-2D79-4C20-B6C1-248DAB0A330B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlOrder.Tests", "SqlOrder.Tests\SqlOrder.Tests.csproj", "{4783658B-FDEE-4926-9282-967F1DA5A456}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlOrder.Console", "SqlOrder.Console\SqlOrder.Console.csproj", "{AF3C05F9-EA68-4A5F-887B-DB572018D1F5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{79377F88-2D79-4C20-B6C1-248DAB0A330B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79377F88-2D79-4C20-B6C1-248DAB0A330B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79377F88-2D79-4C20-B6C1-248DAB0A330B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79377F88-2D79-4C20-B6C1-248DAB0A330B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4783658B-FDEE-4926-9282-967F1DA5A456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4783658B-FDEE-4926-9282-967F1DA5A456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4783658B-FDEE-4926-9282-967F1DA5A456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4783658B-FDEE-4926-9282-967F1DA5A456}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF3C05F9-EA68-4A5F-887B-DB572018D1F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF3C05F9-EA68-4A5F-887B-DB572018D1F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF3C05F9-EA68-4A5F-887B-DB572018D1F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF3C05F9-EA68-4A5F-887B-DB572018D1F5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
