@@ -10,5 +10,4 @@ public sealed class Options
 
     [Option('i', nameof(IgnorePaths), Separator = ',', HelpText = "Paths to ignore")]
     public IEnumerable<string> IgnorePaths { get; set; } = null!;
-
 }

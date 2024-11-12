@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.Logging.Abstractions;
 using SqlOrder;
@@ -36,26 +37,45 @@ Console.WriteLine($"Found {files.Length} files at {options.Folder}...");
 
 var orderedFiles = await new ScriptOrderer().OrderScripts(files, cts.Token);
 
-await using var container = new MsSqlBuilder()
+await using var sqlContainer = new MsSqlBuilder()
     // per issue at https://github.com/testcontainers/testcontainers-dotnet/issues/1271
-    .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    .WithImage("sqlorder-sqlserver")
     .WithLogger(NullLogger.Instance)
     .Build();
 
 Console.WriteLine("starting container...");
-await container.StartAsync();
+await sqlContainer.StartAsync();
 Console.WriteLine("\tstarted.");
 
-foreach (var file in orderedFiles)
-{
-    Console.WriteLine($"Executing script at {file.Name}...");
-    var result = await container.ExecScriptAsync(await file.GetScriptText(cts.Token), cts.Token);
+await CreateSqlOrderDatabase(sqlContainer, cts.Token);
 
-    if (result.ExitCode != 0)
+await RunScripts(sqlContainer, orderedFiles, cts.Token);
+
+async Task CreateSqlOrderDatabase(MsSqlContainer container, CancellationToken cancellationToken)
+{
+    var connectionString = container.GetConnectionString();
+    await using var connection = new SqlConnection(connectionString);
+    await connection.OpenAsync();
+    await using var sqlCommand = new SqlCommand("create database sqlorder;", connection);
+    await sqlCommand.ExecuteNonQueryAsync(cancellationToken);
+}
+
+async Task RunScripts(MsSqlContainer container, IEnumerable<Script> scripts, CancellationToken token)
+{
+    foreach (var file in scripts)
     {
-        Console.WriteLine($"\tScript failed:");
-        Console.WriteLine(result.Stdout);
-        Console.WriteLine(result.Stderr);
-        break;
+        Console.WriteLine($"Executing script at {file.Name}...");
+
+        var sqlScript = $"use [sqlorder]; {Environment.NewLine}GO{Environment.NewLine}{await file.GetScriptText(token)}";
+
+        var result = await container.ExecScriptAsync(sqlScript, token);
+
+        if (result.ExitCode != 0)
+        {
+            Console.WriteLine($"\tError running {file.Name}:");
+            Console.WriteLine(result.Stdout);
+            Console.WriteLine(result.Stderr);
+            return;
+        }
     }
 }

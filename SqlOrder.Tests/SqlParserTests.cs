@@ -92,7 +92,7 @@ public sealed class SqlParserTests
 
         results.Should().BeEquivalentTo(new[]
         {
-            new UserDefinition(new ObjectName("dbo", "derp")),
+            new UserOrRoleDefinition(new ObjectName("dbo", "derp")),
         });
     }
 }

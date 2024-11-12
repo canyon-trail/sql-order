@@ -9,7 +9,7 @@ public enum DependencyKind
     Function,
     Schema,
     Procedure,
-    User,
+    UserOrRole,
 }
 
 public record Statement(ImmutableArray<Dependency> Dependencies);
@@ -75,11 +75,11 @@ public record ProcedureDefinition(ObjectName Name, ImmutableArray<Dependency> De
     }
 }
 
-public record UserDefinition(ObjectName Name)
+public record UserOrRoleDefinition(ObjectName Name)
     : Definition(Name, Dependency.EmptyArray)
 {
     public override Dependency ToDependency()
     {
-        return new Dependency(Name, DependencyKind.User);
+        return new Dependency(Name, DependencyKind.UserOrRole);
     }
 }

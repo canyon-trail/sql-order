@@ -17,7 +17,7 @@ internal sealed class GrantVisitor : StatementHarvestingVisitor
 
         var statement = new Statement(
             Dependency.ArrayOf(
-                new Dependency(objectName, DependencyKind.User)));
+                new Dependency(objectName, DependencyKind.UserOrRole)));
 
         return context.Add(statement);
     }

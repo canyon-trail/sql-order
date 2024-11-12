@@ -89,7 +89,7 @@ public sealed class ScriptOrderer
         {
             if (!objectToDefinedInScript.TryGetValue(dependency, out var definedInScript))
             {
-                throw new Exception($"Unable to find definition of {dependency.Kind} {dependency.Name} referenced in {scriptName}");
+                throw new Exception($"Unable to find definition of\n{dependency.Kind} {dependency.Name}\n\treferenced in {scriptName}");
             }
 
             return definedInScript;

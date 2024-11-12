@@ -13,12 +13,21 @@ public sealed class Builtins
         new ObjectName("sys", "types"),
     ];
 
+    public static readonly IEnumerable<ObjectName> Users = [
+        new ObjectName("dbo", "guest"),
+        new ObjectName("dbo", "db_ddlviewer"),
+    ];
+
     public static IReadOnlyCollection<Dependency> All => lzDependencies.Value;
 
     private static HashSet<Dependency> CreateDependencies()
     {
         var tables = Tables.Select(x => new Dependency(x, DependencyKind.TableOrView));
+        var users = Users.Select(x => new Dependency(x, DependencyKind.UserOrRole));
 
-        return [..tables];
+        return [
+            ..tables,
+            ..users
+        ];
     }
 }
