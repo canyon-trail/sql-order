@@ -1,3 +1,5 @@
+using SqlOrder.AstTypes;
+
 namespace SqlOrder.Tests;
 
 public sealed class FunctionParsingTests

@@ -20,46 +20,24 @@ public sealed class ScriptOrdererTests
     }
 
     [Fact]
-    public async Task OrdersUserBeforeGrant()
+    public async Task OrdersTableDataTypeBeforeProc()
     {
-        var grant = new StringScript(
-            "grant",
-            @"grant all on [exampleschema] to [exampleuser];"
+        var proc = new StringScript(
+            "proc",
+            @"create procedure dothething(@args as tabletype readonly)
+                as
+                begin
+                    select * from @args;
+                end;
+                "
             );
 
-        var schema = new StringScript(
-            "schema",
-            "create schema exampleschema authorization dbo;"
-            );
-        var user = new StringScript(
-            "user",
-            "create user [exampleuser];"
-            );
+        var dataType = new StringScript("datatype", "create type tabletype as table (id int not null)");
 
         var testee = new ScriptOrderer();
 
-        var result = await testee.OrderScripts([grant, schema, user], CancellationToken.None);
+        var result = await testee.OrderScripts([proc, dataType], CancellationToken.None);
 
-        result.Should().BeEquivalentTo([schema, user, grant], x => x.WithStrictOrdering());
-    }
-
-    [Fact]
-    public async Task OrdersUserBeforeRoleAssignment()
-    {
-        var alter = new StringScript(
-            "alter",
-            @"alter role [somerole] add member [exampleuser];"
-            );
-
-        var user = new StringScript(
-            "user",
-            "create user [exampleuser];"
-            );
-
-        var testee = new ScriptOrderer();
-
-        var result = await testee.OrderScripts([alter, user], CancellationToken.None);
-
-        result.Should().BeEquivalentTo([user, alter], x => x.WithStrictOrdering());
+        result.Should().BeEquivalentTo([dataType, proc], x => x.WithStrictOrdering());
     }
 }

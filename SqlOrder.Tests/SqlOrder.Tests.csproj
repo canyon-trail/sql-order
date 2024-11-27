@@ -29,4 +29,8 @@
     <ProjectReference Include="..\SqlOrder\SqlOrder.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="__snapshots__\" />
+  </ItemGroup>
+
 </Project>

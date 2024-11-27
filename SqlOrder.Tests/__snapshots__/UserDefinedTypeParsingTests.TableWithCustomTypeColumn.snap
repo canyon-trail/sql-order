@@ -1,0 +1,161 @@
+﻿{
+  "Name": "SqlScript",
+  "Children": [
+    {
+      "Name": "SqlBatch",
+      "Children": [
+        {
+          "Name": "SqlCreateUserDefinedTableTypeStatement",
+          "Children": [
+            {
+              "Name": "OnePartObjectIdentifier",
+              "Children": [
+                {
+                  "Name": "SqlIdentifier",
+                  "Children": []
+                }
+              ]
+            },
+            {
+              "Name": "SqlTableDefinition",
+              "Children": [
+                {
+                  "Name": "SqlColumnDefinition",
+                  "Children": [
+                    {
+                      "Name": "SqlIdentifier",
+                      "Children": []
+                    },
+                    {
+                      "Name": "SqlDataTypeSpecification",
+                      "Children": [
+                        {
+                          "Name": "SqlDataType",
+                          "Children": [
+                            {
+                              "Name": "OnePartObjectIdentifier",
+                              "Children": [
+                                {
+                                  "Name": "SqlIdentifier",
+                                  "Children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Name": "TypeOnlyConstraint",
+                      "Children": []
+                    }
+                  ]
+                },
+                {
+                  "Name": "SqlColumnDefinition",
+                  "Children": [
+                    {
+                      "Name": "SqlIdentifier",
+                      "Children": []
+                    },
+                    {
+                      "Name": "SqlDataTypeSpecification",
+                      "Children": [
+                        {
+                          "Name": "SqlDataType",
+                          "Children": [
+                            {
+                              "Name": "OnePartObjectIdentifier",
+                              "Children": [
+                                {
+                                  "Name": "SqlIdentifier",
+                                  "Children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Name": "TypeOnlyConstraint",
+                      "Children": []
+                    }
+                  ]
+                },
+                {
+                  "Name": "SqlColumnDefinition",
+                  "Children": [
+                    {
+                      "Name": "SqlIdentifier",
+                      "Children": []
+                    },
+                    {
+                      "Name": "SqlDataTypeSpecification",
+                      "Children": [
+                        {
+                          "Name": "SqlDataType",
+                          "Children": [
+                            {
+                              "Name": "OnePartObjectIdentifier",
+                              "Children": [
+                                {
+                                  "Name": "SqlIdentifier",
+                                  "Children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Name": "TypeOnlyConstraint",
+                      "Children": []
+                    }
+                  ]
+                },
+                {
+                  "Name": "SqlColumnDefinition",
+                  "Children": [
+                    {
+                      "Name": "SqlIdentifier",
+                      "Children": []
+                    },
+                    {
+                      "Name": "SqlDataTypeSpecification",
+                      "Children": [
+                        {
+                          "Name": "SqlDataType",
+                          "Children": [
+                            {
+                              "Name": "TwoPartObjectIdentifier",
+                              "Children": [
+                                {
+                                  "Name": "SqlIdentifier",
+                                  "Children": []
+                                },
+                                {
+                                  "Name": "SqlIdentifier",
+                                  "Children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Name": "TypeOnlyConstraint",
+                      "Children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

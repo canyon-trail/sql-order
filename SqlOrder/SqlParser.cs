@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using SqlOrder.AstTypes;
 using SqlOrder.Visitors;
 
 namespace SqlOrder;

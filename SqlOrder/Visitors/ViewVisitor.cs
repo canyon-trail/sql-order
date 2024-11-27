@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using SqlOrder.AstTypes;
 
 namespace SqlOrder.Visitors;
 
@@ -12,7 +13,7 @@ internal sealed class ViewVisitor : StatementHarvestingVisitor
 
     public override ImmutableArray<Statement> Visit(SqlViewDefinition codeObject, ImmutableArray<Statement> context)
     {
-        var name = ObjectName.FromNullishSchema(codeObject.Name.SchemaName?.Value, codeObject.Name.ObjectName.Value);
+        var name = ObjectName.FromSqlObjectIdentifier(codeObject.Name);
 
         var ctes = new CommonTableExpressionHarvester().Descend(codeObject.Children);
 

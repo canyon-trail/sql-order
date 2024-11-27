@@ -38,8 +38,8 @@ Console.WriteLine($"Found {files.Length} files at {options.Folder}...");
 var orderedFiles = await new ScriptOrderer().OrderScripts(files, cts.Token);
 
 await using var sqlContainer = new MsSqlBuilder()
-    // per issue at https://github.com/testcontainers/testcontainers-dotnet/issues/1271
-    .WithImage("sqlorder-sqlserver")
+    // using custom image that has full-text-search installed
+    .WithImage("canyontrail/sqlorder-sqlserver")
     .WithLogger(NullLogger.Instance)
     .Build();
 

@@ -1,4 +1,7 @@
-﻿namespace SqlOrder;
+﻿using System.Collections.Immutable;
+using SqlOrder.AstTypes;
+
+namespace SqlOrder;
 
 public sealed class Builtins
 {
@@ -18,16 +21,39 @@ public sealed class Builtins
         new ObjectName("dbo", "db_ddlviewer"),
     ];
 
+    public static readonly ImmutableHashSet<ObjectName> Types = new[]
+    {
+        new ObjectName("dbo", "int"),
+        new ObjectName("dbo", "bigint"),
+        new ObjectName("dbo", "smallint"),
+        new ObjectName("dbo", "tinyint"),
+        new ObjectName("dbo", "float"),
+        new ObjectName("dbo", "decimal"),
+        new ObjectName("dbo", "numeric"),
+        new ObjectName("dbo", "uniqueidentifier"),
+        new ObjectName("dbo", "text"),
+        new ObjectName("dbo", "ntext"),
+        new ObjectName("dbo", "char"),
+        new ObjectName("dbo", "varchar"),
+        new ObjectName("dbo", "nvarchar"),
+        new ObjectName("dbo", "bit"),
+        new ObjectName("dbo", "date"),
+        new ObjectName("dbo", "datetime"),
+        new ObjectName("dbo", "datetimeoffset"),
+    }.ToImmutableHashSet();
+
     public static IReadOnlyCollection<Dependency> All => lzDependencies.Value;
 
     private static HashSet<Dependency> CreateDependencies()
     {
         var tables = Tables.Select(x => new Dependency(x, DependencyKind.TableOrView));
         var users = Users.Select(x => new Dependency(x, DependencyKind.UserOrRole));
+        var types = Types.Select(x => new Dependency(x, DependencyKind.UserDefinedType));
 
         return [
             ..tables,
-            ..users
+            ..users,
+            ..types,
         ];
     }
 }

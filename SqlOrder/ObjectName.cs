@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 
 namespace SqlOrder;
 
@@ -32,6 +33,11 @@ public sealed class ObjectName : IComparable, IEquatable<ObjectName?>
     public static ObjectName NoSchema(string name)
     {
         return new ObjectName(DefaultSchema.DefaultSchemaName, name);
+    }
+
+    public static ObjectName FromSqlObjectIdentifier(SqlObjectIdentifier name)
+    {
+        return FromNullishSchema(name.SchemaName?.Value, name.ObjectName.Value);
     }
 
     public static ObjectName FromNullishSchema(string? schema, string name)
