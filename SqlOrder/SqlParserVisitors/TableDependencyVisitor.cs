@@ -2,7 +2,7 @@
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using SqlOrder.AstTypes;
 
-namespace SqlOrder.Visitors;
+namespace SqlOrder.SqlParserVisitors;
 
 /// <summary>
 /// Harvests dependencies from table definitions

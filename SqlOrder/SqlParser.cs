@@ -1,7 +1,9 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 using SqlOrder.AstTypes;
-using SqlOrder.Visitors;
+using SqlOrder.CodeDomVisitors;
+using SqlOrder.SqlParserVisitors;
 
 namespace SqlOrder;
 public sealed class SqlParser
@@ -14,6 +16,19 @@ public sealed class SqlParser
             ImmutableArray<Statement>.Empty,
             (defs, visitor) => resultAst.Accept(visitor, defs)
             );
+
+        var codeDomParser = new TSql160Parser(true, SqlEngineType.All);
+        var result = codeDomParser.Parse(new StringReader(sql), out var errors);
+
+        if (errors != null && errors.Any())
+        {
+            var errorMessages = errors.Select(x => $"at {x.Line} ({x.Column}): {x.Message}");
+            throw new Exception($"Found errors: \n{string.Join("\n\t", errorMessages)}");
+        }
+
+        var visitor = new AlterTableVisitor();
+        result.Accept(visitor);
+        definitions = definitions.AddRange(visitor.Statements);
 
         return definitions;
     }

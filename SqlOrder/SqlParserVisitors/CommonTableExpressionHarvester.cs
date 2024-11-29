@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 
-namespace SqlOrder.Visitors;
+namespace SqlOrder.SqlParserVisitors;
 
 internal sealed class CommonTableExpressionHarvester : ImmutableArrayContextVisitor<ObjectName>
 {

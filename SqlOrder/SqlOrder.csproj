@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SqlServer.Management.SqlParser" Version="170.9.0" />
+    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9142.1" />
     <PackageReference Include="SharpDag" Version="0.1.0" />
   </ItemGroup>
 

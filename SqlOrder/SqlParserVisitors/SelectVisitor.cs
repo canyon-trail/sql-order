@@ -2,7 +2,7 @@
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using SqlOrder.AstTypes;
 
-namespace SqlOrder.Visitors;
+namespace SqlOrder.SqlParserVisitors;
 
 internal sealed class SelectVisitor(ImmutableArray<ObjectName> cteNames) : StatementHarvestingVisitor
 {
@@ -12,23 +12,8 @@ internal sealed class SelectVisitor(ImmutableArray<ObjectName> cteNames) : State
 
     public override ImmutableArray<Statement> Visit(SqlSelectStatement codeObject, ImmutableArray<Statement> context)
     {
-        // visit CTE contents
-        var cteVisitor = new CommonTableExpressionHarvester();
-        var foundCteNames = cteVisitor.Descend(codeObject.Children);
-        if (foundCteNames.Any())
-        {
-            var childSelectVisitor = new SelectVisitor(foundCteNames);
-
-            var childResults = childSelectVisitor.Descend(codeObject.Children);
-
-            var combinedStatement = new Statement(
-                childResults.SelectMany(x => x.Dependencies).ToImmutableArray()
-            );
-
-            return context.Add(combinedStatement);
-        }
-
-        return Descend(codeObject.Children, context);
+        var dependencies = new DependencyHarvester().Descend(codeObject);
+        return context.Add(new Statement(dependencies));
     }
 
     public override ImmutableArray<Statement> Visit(SqlTableRefExpression codeObject, ImmutableArray<Statement> context)
@@ -49,11 +34,9 @@ internal sealed class SelectVisitor(ImmutableArray<ObjectName> cteNames) : State
 
     public override ImmutableArray<Statement> Visit(SqlQualifiedJoinTableExpression codeObject, ImmutableArray<Statement> context)
     {
-        var statements = Descend(codeObject.Children, ImmutableArray<Statement>.Empty);
+        var dependencies = new DependencyHarvester(cteNames).Descend(codeObject.Children);
 
-        var newStatement = new Statement(
-            statements.SelectMany(x => x.Dependencies).ToImmutableArray()
-        );
+        var newStatement = new Statement(dependencies);
 
         return context.Add(newStatement);
     }

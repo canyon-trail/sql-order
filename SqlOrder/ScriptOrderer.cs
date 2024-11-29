@@ -14,7 +14,7 @@ public sealed class ScriptOrderer
         var objectNameToDefinedInScript = new Dictionary<Dependency, string>();
         var allStatements = new List<DefinitionDependenciesContext>();
 
-        var dag = Dag<string, ObjectName>.Empty;
+        var dag = Dag<string, Dependency>.Empty;
 
         foreach (var script in scripts)
         {
@@ -55,7 +55,7 @@ public sealed class ScriptOrderer
 
     private sealed class DefinitionDependenciesContext(string scriptName, IEnumerable<Dependency> dependencies, Dictionary<Dependency, string> objectToDefinedInScript)
     {
-        public Dag<string, ObjectName> AddEdgesToDag(Dag<string, ObjectName> dag)
+        public Dag<string, Dependency> AddEdgesToDag(Dag<string, Dependency> dag)
         {
             foreach (var dependency in dependencies)
             {
@@ -66,12 +66,19 @@ public sealed class ScriptOrderer
 
                 var definedInScript = FindScriptName(dependency);
 
+                if (definedInScript == scriptName)
+                {
+                    // ignore self-referencing statements; e.g.
+                    // adding foreign keys to a table in the same script
+                    continue;
+                }
+
                 // notice that the direction of the edge points
                 // from definition to usage.
-                var edge = new TypedEdge<string, ObjectName>(
+                var edge = new TypedEdge<string, Dependency>(
                     dest: scriptName,
                     src: definedInScript,
-                    value: dependency.Name
+                    value: dependency
                     );
                 try
                 {
@@ -79,7 +86,7 @@ public sealed class ScriptOrderer
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Problem adding edge from {scriptName} to {edge.Dest} for {dependency.Kind} {dependency.Name}", ex);
+                    throw new Exception($"Problem adding edge from {edge.Source} to {edge.Dest} for {dependency.Kind} {dependency.Name}", ex);
                 }
             }
 

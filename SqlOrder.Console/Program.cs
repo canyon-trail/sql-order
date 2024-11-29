@@ -26,14 +26,26 @@ var matcher = new Matcher();
 matcher.AddInclude("**/*.sql");
 matcher.AddExcludePatterns(options.IgnorePaths);
 
-Console.WriteLine($"Ordering files at {options.Folder} excluding {string.Join(", ", options.IgnorePaths)}...");
+var folderTxt = string.Join(", ", options.Folders);
+var excludeTxt = string.Join(", ", options.IgnorePaths);
 
-var files = matcher.GetResultsInFullPath(options.Folder)
-        .Select(x => new FileScript(x))
-        .ToArray()
+Console.WriteLine($"Ordering files at {folderTxt} excluding {excludeTxt}...");
+
+var files = options.Folders
+    .SelectMany(
+        x => matcher.GetResultsInFullPath(x)
+            .Select(Path.GetFullPath)
+    )
+    // this excludes items where the exclude pattern includes parent folders. The
+    // Match function doesn't work on rooted paths, so we have to strip the root
+    .Where(x => matcher.Match(Path.GetRelativePath(Path.GetPathRoot(x), x)).HasMatches)
+    .Distinct()
+    .OrderBy(x => x)
+    .Select(x => new FileScript(x))
+    .ToArray()
     ;
 
-Console.WriteLine($"Found {files.Length} files at {options.Folder}...");
+Console.WriteLine($"Found {files.Length} files...");
 
 var orderedFiles = await new ScriptOrderer().OrderScripts(files, cts.Token);
 
@@ -62,11 +74,20 @@ async Task CreateSqlOrderDatabase(MsSqlContainer container, CancellationToken ca
 
 async Task RunScripts(MsSqlContainer container, IEnumerable<Script> scripts, CancellationToken token)
 {
+    var leadingLines = new[]
+    {
+        "use [sqlorder]",
+        "GO",
+        "SET QUOTED_IDENTIFIER ON",
+        "GO",
+    };
+    var header = string.Join(Environment.NewLine, leadingLines);
+
     foreach (var file in scripts)
     {
         Console.WriteLine($"Executing script at {file.Name}...");
 
-        var sqlScript = $"use [sqlorder]; {Environment.NewLine}GO{Environment.NewLine}{await file.GetScriptText(token)}";
+        var sqlScript = $"{header}{Environment.NewLine}{await file.GetScriptText(token)}";
 
         var result = await container.ExecScriptAsync(sqlScript, token);
 

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using SqlOrder.AstTypes;
 
 namespace SqlOrder;
 
@@ -82,5 +83,25 @@ public sealed class ObjectName : IComparable, IEquatable<ObjectName?>
     public override int GetHashCode()
     {
         return HashCode.Combine(SchemaName, Name);
+    }
+
+    public Dependency ToSchemaDependency()
+    {
+        return ToDependency(DependencyKind.Schema);
+    }
+
+    public Dependency ToTableDependency()
+    {
+        return ToDependency(DependencyKind.TableOrView);
+    }
+
+    public Dependency ToUserDefinedTypeDependency()
+    {
+        return ToDependency(DependencyKind.UserDefinedType);
+    }
+
+    private Dependency ToDependency(DependencyKind kind)
+    {
+        return new Dependency(this, kind);
     }
 }

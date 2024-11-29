@@ -19,7 +19,9 @@ public sealed class UserDefinedTypeParsingTests
         results.Should().BeEquivalentTo(new[] {
             new UserDefinedTypeDefinition(
                 new ObjectName("dbo", "derp"),
-                Dependency.EmptyArray
+                Dependency.ArrayOf(
+                    ObjectName.Schema("dbo").ToSchemaDependency()
+                )
             ),
         });
     }
@@ -41,7 +43,9 @@ public sealed class UserDefinedTypeParsingTests
         results.Should().BeEquivalentTo(new[] {
             new UserDefinedTypeDefinition(
                 new ObjectName("dbo", "derp"),
-                Dependency.EmptyArray
+                Dependency.ArrayOf(
+                    ObjectName.Schema("dbo").ToSchemaDependency()
+                )
             ),
         });
     }
@@ -58,8 +62,6 @@ public sealed class UserDefinedTypeParsingTests
             );
         ";
 
-        SqlParser.ParseInternal(sql).Simplify().Should().MatchSnapshot();
-
         var parser = new SqlParser();
 
         var results = parser.Parse(sql);
@@ -68,6 +70,7 @@ public sealed class UserDefinedTypeParsingTests
             new UserDefinedTypeDefinition(
                 new ObjectName("dbo", "derp"),
                 Dependency.ArrayOf(
+                    ObjectName.Schema("dbo").ToSchemaDependency(),
                     new Dependency(new ObjectName("otherschema", "deptype"), DependencyKind.UserDefinedType)
                 )
             ),

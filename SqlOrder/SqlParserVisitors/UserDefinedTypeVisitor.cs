@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using SqlOrder.AstTypes;
 
-namespace SqlOrder.Visitors;
+namespace SqlOrder.SqlParserVisitors;
 
 internal sealed class UserDefinedTypeVisitor : StatementHarvestingVisitor
 {
@@ -10,14 +10,20 @@ internal sealed class UserDefinedTypeVisitor : StatementHarvestingVisitor
     {
         var name = ObjectName.FromSqlObjectIdentifier(codeObject.Name);
 
-        return context.Add(new UserDefinedTypeDefinition(name, Dependency.EmptyArray));
+        return context.Add(new UserDefinedTypeDefinition(
+            name,
+            Dependency.ArrayOf(
+                ObjectName.Schema(name.SchemaName).ToSchemaDependency()
+            )
+        ));
     }
 
     public override ImmutableArray<Statement> Visit(SqlCreateUserDefinedTableTypeStatement codeObject, ImmutableArray<Statement> context)
     {
         var name = ObjectName.FromSqlObjectIdentifier(codeObject.Name);
 
-        var dependencies = new TableDependencyVisitor().Descend(codeObject.Children);
+        var dependencies = new TableDependencyVisitor().Descend(codeObject.Children)
+            .Add(ObjectName.Schema(name.SchemaName).ToSchemaDependency());
 
         return context.Add(new UserDefinedTypeDefinition(name, dependencies));
     }

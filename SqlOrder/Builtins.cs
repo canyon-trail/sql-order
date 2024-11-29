@@ -8,12 +8,16 @@ public sealed class Builtins
     private static readonly Lazy<HashSet<Dependency>> lzDependencies = new (CreateDependencies);
     public static readonly IEnumerable<ObjectName> Tables = [
         new ObjectName("dbo", "spt_values"),
+        new ObjectName("dbo", "inserted"),
+        new ObjectName("dbo", "updated"),
+        new ObjectName("dbo", "deleted"),
         new ObjectName("sys", "extended_properties"),
         new ObjectName("sys", "key_constraints"),
         new ObjectName("sys", "objects"),
         new ObjectName("sys", "indexes"),
         new ObjectName("sys", "schemas"),
         new ObjectName("sys", "types"),
+        new ObjectName("sys", "columns"),
     ];
 
     public static readonly IEnumerable<ObjectName> Users = [
@@ -34,12 +38,19 @@ public sealed class Builtins
         new ObjectName("dbo", "text"),
         new ObjectName("dbo", "ntext"),
         new ObjectName("dbo", "char"),
+        new ObjectName("dbo", "nchar"),
         new ObjectName("dbo", "varchar"),
+        new ObjectName("dbo", "varbinary"),
         new ObjectName("dbo", "nvarchar"),
         new ObjectName("dbo", "bit"),
         new ObjectName("dbo", "date"),
+        new ObjectName("dbo", "time"),
         new ObjectName("dbo", "datetime"),
+        new ObjectName("dbo", "datetime2"),
         new ObjectName("dbo", "datetimeoffset"),
+        new ObjectName("dbo", "sysname"),
+        new ObjectName("dbo", "xml"),
+        new ObjectName("dbo", "sql_variant"),
     }.ToImmutableHashSet();
 
     public static IReadOnlyCollection<Dependency> All => lzDependencies.Value;
@@ -54,6 +65,7 @@ public sealed class Builtins
             ..tables,
             ..users,
             ..types,
+            ObjectName.Schema(DefaultSchema.DefaultSchemaName).ToSchemaDependency(),
         ];
     }
 }

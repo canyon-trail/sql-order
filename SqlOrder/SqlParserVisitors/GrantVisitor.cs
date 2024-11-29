@@ -1,9 +1,8 @@
 ﻿using System.Collections.Immutable;
-using Microsoft.SqlServer.Management.SqlParser.Parser;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using SqlOrder.AstTypes;
 
-namespace SqlOrder.Visitors;
+namespace SqlOrder.SqlParserVisitors;
 
 internal sealed class GrantVisitor : StatementHarvestingVisitor
 {

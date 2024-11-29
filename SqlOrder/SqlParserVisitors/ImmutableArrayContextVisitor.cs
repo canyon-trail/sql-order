@@ -1,16 +1,20 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 
-namespace SqlOrder.Visitors;
+namespace SqlOrder.SqlParserVisitors;
 
 internal abstract class ImmutableArrayContextVisitor<TContext> : SqlCodeObjectContextVisitor<ImmutableArray<TContext>, ImmutableArray<TContext>>
 {
+    public ImmutableArray<TContext> Descend<TChild>(TChild child) where TChild : SqlCodeObject
+    {
+        return Accept(child, ImmutableArray<TContext>.Empty);
+    }
     public ImmutableArray<TContext> Descend<TChild>(IEnumerable<TChild> children) where TChild : SqlCodeObject
     {
         return Descend(children, ImmutableArray<TContext>.Empty);
     }
 
-    public ImmutableArray<TContext> Descend<TChild>(
+    public virtual ImmutableArray<TContext> Descend<TChild>(
         IEnumerable<TChild> children,
         ImmutableArray<TContext> context)
         where TChild : SqlCodeObject

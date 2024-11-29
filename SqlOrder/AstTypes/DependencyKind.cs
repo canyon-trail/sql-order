@@ -7,5 +7,6 @@ public enum DependencyKind
     Schema,
     Procedure,
     UserOrRole,
-    UserDefinedType
+    UserDefinedType,
+    Sequence
 }
