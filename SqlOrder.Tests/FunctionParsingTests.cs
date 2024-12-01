@@ -249,4 +249,26 @@ RETURN
             ),
         });
     }
+
+    [Fact]
+    public void BuiltinFunction()
+    {
+        var sql = @"
+            create function DoTheThing()
+            returns int
+            begin
+                return (
+                    select count(*) from string_split('', ',')
+                )
+            end
+         ";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        results.Should().BeEquivalentTo(new[] {
+            new FunctionDefinition(ObjectName.NoSchema("DoTheThing"), Dependency.EmptyArray),
+        });
+    }
 }

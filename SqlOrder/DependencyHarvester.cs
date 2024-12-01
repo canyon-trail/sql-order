@@ -95,6 +95,11 @@ internal sealed class DependencyHarvester(ImmutableArray<ObjectName> cteNames)
 
         var dependency = new Dependency(objectName, DependencyKind.Function);
 
+        if (Builtins.All.Contains(dependency))
+        {
+            return (context, DescendOption.Descend);
+        }
+
         return (context.Add(dependency), DescendOption.Descend);
     }
 

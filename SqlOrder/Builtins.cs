@@ -55,6 +55,11 @@ public sealed class Builtins
         new ObjectName("dbo", "sql_variant"),
     }.ToImmutableHashSet();
 
+    public static readonly ImmutableHashSet<ObjectName> Functions = new[]
+    {
+        new ObjectName("dbo", "string_split"),
+    }.ToImmutableHashSet();
+
     public static IReadOnlyCollection<Dependency> All => lzDependencies.Value;
 
     private static HashSet<Dependency> CreateDependencies()
@@ -62,11 +67,13 @@ public sealed class Builtins
         var tables = Tables.Select(x => new Dependency(x, DependencyKind.TableOrView));
         var users = Users.Select(x => new Dependency(x, DependencyKind.UserOrRole));
         var types = Types.Select(x => new Dependency(x, DependencyKind.UserDefinedType));
+        var functions = Functions.Select(x => new Dependency(x, DependencyKind.Function));
 
         return [
             ..tables,
             ..users,
             ..types,
+            ..functions,
             ObjectName.Schema(DefaultSchema.DefaultSchemaName).ToSchemaDependency(),
         ];
     }
