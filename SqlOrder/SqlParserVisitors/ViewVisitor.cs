@@ -15,13 +15,9 @@ internal sealed class ViewVisitor : StatementHarvestingVisitor
     {
         var name = ObjectName.FromSqlObjectIdentifier(codeObject.Name);
 
-        var ctes = new CommonTableExpressionHarvester().Descend(codeObject.Children);
+        var cteNames = new CommonTableExpressionHarvester().Descend(codeObject.Children);
 
-        var selectStatementResults = new SelectVisitor(ctes).Descend(codeObject.Children);
-
-        var dependencies = selectStatementResults
-            .SelectMany(x => x.Dependencies)
-            .ToImmutableArray();
+        var dependencies = new DependencyHarvester(cteNames).Harvest(codeObject);
 
         return context.Add(new TableOrViewDefinition(name, dependencies));
     }

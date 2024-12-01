@@ -55,6 +55,8 @@ public sealed class ScriptOrderer
 
     private sealed class DefinitionDependenciesContext(string scriptName, IEnumerable<Dependency> dependencies, Dictionary<Dependency, string> objectToDefinedInScript)
     {
+        public string ScriptName => scriptName;
+
         public Dag<string, Dependency> AddEdgesToDag(Dag<string, Dependency> dag)
         {
             foreach (var dependency in dependencies)

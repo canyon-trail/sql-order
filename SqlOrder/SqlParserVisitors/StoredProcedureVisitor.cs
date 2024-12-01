@@ -16,9 +16,11 @@ internal sealed class StoredProcedureVisitor : StatementHarvestingVisitor
         var name = ObjectName.FromSqlObjectIdentifier(codeObject.Name);
         var harvester = new DependencyHarvester();
 
-        var argDependencies = harvester.Descend(codeObject.Children);
+        // we have to harvest twice here since codeObject.Statement is apparently
+        // not reachable from SqlProcedureDefinition.Children
+        var argDependencies = harvester.Harvest(codeObject);
         var dependencies = harvester
-            .Descend(codeObject.Statement.Children)
+            .Harvest(codeObject.Statement)
             .Where(x => !x.Name.Name.StartsWith("#")) // exclude temp tables
             .ToImmutableArray()
             ;
@@ -31,6 +33,8 @@ internal sealed class StoredProcedureVisitor : StatementHarvestingVisitor
                 }
                 .Concat(dependencies)
                 .Concat(argDependencies)
+                .Where(x => !Builtins.All.Contains(x))
+                .Distinct()
                 .ToImmutableArray()
         );
 

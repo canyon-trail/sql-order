@@ -15,7 +15,9 @@ public sealed class Builtins
         new ObjectName("sys", "key_constraints"),
         new ObjectName("sys", "objects"),
         new ObjectName("sys", "indexes"),
+        new ObjectName("sys", "index_columns"),
         new ObjectName("sys", "schemas"),
+        new ObjectName("sys", "sequences"),
         new ObjectName("sys", "types"),
         new ObjectName("sys", "columns"),
     ];

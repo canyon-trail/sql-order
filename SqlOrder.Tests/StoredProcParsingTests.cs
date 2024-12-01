@@ -173,4 +173,185 @@ end;
             ),
         });
     }
+
+    [Fact]
+    public void VariableTypeDependency()
+    {
+        var sql = @"
+CREATE   proc myproc
+as
+begin
+	set nocount on;
+
+	begin try
+
+		begin tran;
+
+		declare @sometablevar as myschema.sometabletype;
+
+        insert into @sometablevar select * from sometable;
+
+		commit tran;
+
+	end try
+	begin catch
+
+		while @@TRANCOUNT > 0
+		rollback tran;
+
+		throw;
+
+	end catch;
+
+end;
+";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
+
+        results.Should().BeEquivalentTo(new[] {
+            new ProcedureDefinition(
+                new ObjectName("dbo", "myproc"),
+                Dependency.ArrayOf(
+                    new ObjectName("myschema", "sometabletype").ToUserDefinedTypeDependency(),
+                    new ObjectName("dbo", "sometable").ToTableDependency()
+                )
+            ),
+        }, reason);
+    }
+
+    [Fact]
+    public void UpdateFromAlias()
+    {
+        var sql = @"
+CREATE   proc myproc
+as
+begin
+
+    update x set foo = 1
+    from table1 x;
+
+end;
+";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
+
+        results.Should().BeEquivalentTo(new[] {
+            new ProcedureDefinition(
+                new ObjectName("dbo", "myproc"),
+                Dependency.ArrayOf(
+                    new ObjectName("dbo", "table1").ToTableDependency()
+                )
+            ),
+        }, reason);
+    }
+
+    [Fact]
+    public void UpdateFromAliasWithJoin()
+    {
+        var sql = @"
+CREATE   proc myproc
+as
+begin
+
+    update x set foo = 1
+    from table1 x
+	inner join table2 on x.a = table2.a
+	;
+
+end;
+";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
+
+        results.Should().BeEquivalentTo(new[] {
+            new ProcedureDefinition(
+                new ObjectName("dbo", "myproc"),
+                Dependency.ArrayOf(
+                    new ObjectName("dbo", "table1").ToTableDependency(),
+                    new ObjectName("dbo", "table2").ToTableDependency()
+                )
+            ),
+        }, reason);
+    }
+
+    [Fact]
+    public void UpdateFromRightAliasWithJoin()
+    {
+        var sql = @"
+CREATE   proc myproc
+as
+begin
+
+	update	x
+	set		c1 = 1
+	from	table1 a
+			inner join table2 x on a.c = x.c
+	;
+
+end;
+";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
+
+        results.Should().BeEquivalentTo(new[] {
+            new ProcedureDefinition(
+                new ObjectName("dbo", "myproc"),
+                Dependency.ArrayOf(
+                    new ObjectName("dbo", "table1").ToTableDependency(),
+                    new ObjectName("dbo", "table2").ToTableDependency()
+                )
+            ),
+        }, reason);
+    }
+
+    [Fact]
+    public void MergeWithCte()
+    {
+        var sql = @"
+CREATE   proc myproc
+as
+begin
+
+	with _x as (select * from table1)
+	merge into table2
+	using (select * from _x) src
+	on src.c = table2.c
+	when matched then update set c2 = src.c2;
+	
+
+end;
+";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
+
+        results.Should().BeEquivalentTo(new[] {
+            new ProcedureDefinition(
+                new ObjectName("dbo", "myproc"),
+                Dependency.ArrayOf(
+                    new ObjectName("dbo", "table1").ToTableDependency(),
+                    new ObjectName("dbo", "table2").ToTableDependency()
+                )
+            ),
+        }, reason);
+    }
 }

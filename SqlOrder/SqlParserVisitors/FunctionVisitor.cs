@@ -13,7 +13,7 @@ internal sealed class FunctionVisitor : StatementHarvestingVisitor
         var functionName = new ObjectName(schema, statement.Definition.Name.ObjectName.Value);
 
         var harvester = new DependencyHarvester();
-        var childDependencies = harvester.Descend(statement.Children);
+        var childDependencies = harvester.Harvest(statement);
 
         var declaration = new FunctionDefinition(
             functionName,

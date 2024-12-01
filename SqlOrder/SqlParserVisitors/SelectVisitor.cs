@@ -12,7 +12,7 @@ internal sealed class SelectVisitor(ImmutableArray<ObjectName> cteNames) : State
 
     public override ImmutableArray<Statement> Visit(SqlSelectStatement codeObject, ImmutableArray<Statement> context)
     {
-        var dependencies = new DependencyHarvester().Descend(codeObject);
+        var dependencies = new DependencyHarvester().Harvest(codeObject);
         return context.Add(new Statement(dependencies));
     }
 
@@ -34,7 +34,7 @@ internal sealed class SelectVisitor(ImmutableArray<ObjectName> cteNames) : State
 
     public override ImmutableArray<Statement> Visit(SqlQualifiedJoinTableExpression codeObject, ImmutableArray<Statement> context)
     {
-        var dependencies = new DependencyHarvester(cteNames).Descend(codeObject.Children);
+        var dependencies = new DependencyHarvester(cteNames).Harvest(codeObject);
 
         var newStatement = new Statement(dependencies);
 

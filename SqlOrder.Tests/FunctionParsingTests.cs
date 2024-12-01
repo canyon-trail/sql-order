@@ -160,8 +160,12 @@ RETURN
                     WHERE EXISTS (
                         SELECT 1
                         FROM innertable3 alias3
-                        WHERE ec.ID_E = @EvaluationInstanceID
-                            AND alias3.col = alias1.somecolumn
+                        WHERE alias3.col = alias1.somecolumn
+                    )
+                    and not EXISTS (
+                        SELECT 1
+                        FROM innertable3 alias3
+                        WHERE alias3.col = alias1.somecolumn
                     )
                 ) a
             );
@@ -182,5 +186,67 @@ RETURN
                 )
             ),
         }, reason);
+    }
+
+    [Fact]
+    public void SubqueryInCaseStatement()
+    {
+        var sql = @"
+            CREATE FUNCTION somefunction ( )
+            RETURNS TABLE
+            AS RETURN
+            (
+            SELECT * FROM table1
+            where 1 =
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM othertable
+                    )
+                    THEN 1
+                ELSE 0
+            END
+            );
+        ";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
+
+        results.Should().BeEquivalentTo(new[] {
+            new ProcedureDefinition(
+                new ObjectName("dbo", "somefunction"),
+                Dependency.ArrayOf(
+                    new ObjectName("dbo", "table1").ToTableDependency(),
+                    new ObjectName("dbo", "othertable").ToTableDependency()
+                )
+            ),
+        }, reason);
+    }
+
+    [Fact]
+    public void SelectFromTableValuedFunction()
+    {
+        var sql = @"
+            create function DoTheThing()
+            returns int
+            begin
+                return (
+                    select count(*) from myschema.SomeTableFunction(2, 3)
+                )
+            end
+         ";
+
+        var parser = new SqlParser();
+
+        var results = parser.Parse(sql);
+
+        results.Should().BeEquivalentTo(new[] {
+            new FunctionDefinition(ObjectName.NoSchema("DoTheThing"),
+                Dependency.ArrayOf(
+                    new Dependency(new ObjectName("myschema", "SomeTableFunction"), DependencyKind.Function)
+                )
+            ),
+        });
     }
 }

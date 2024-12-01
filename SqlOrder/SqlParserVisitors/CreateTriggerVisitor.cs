@@ -16,7 +16,7 @@ internal sealed class CreateTriggerVisitor : StatementHarvestingVisitor
             .Select(ObjectName.FromSqlObjectIdentifier)
             .SingleOrDefault();
 
-        var dependencies = harvester.Descend(codeObject.Children);
+        var dependencies = harvester.Harvest(codeObject);
         if (tableName != null)
         {
             dependencies = dependencies.Add(tableName.ToTableDependency());
