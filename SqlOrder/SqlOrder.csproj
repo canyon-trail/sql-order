@@ -7,12 +7,19 @@
     <LangVersion>12</LangVersion>
     <Authors>Canyon Trail, LLC</Authors>
     <RepositoryUrl>https://github.com/canyon-trail/sql-order</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/canyon-trail/sql-order</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SqlServer.Management.SqlParser" Version="170.9.0" />
     <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9142.1" />
     <PackageReference Include="SharpDag" Version="0.1.2" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

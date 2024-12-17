@@ -31,21 +31,29 @@ public sealed class SqlDependencyModel
     {
         var subgraph = _dag;
 
-        var sinks = GetNonMatchingSinks();
-        while (sinks.Any())
-        {
-            subgraph = subgraph.RemoveNodes(sinks);
-            sinks = GetNonMatchingSinks();
-        }
+        // the only sink (i.e. node with out-degree zero) should be
+        // the one defined by scriptName. Other sinks need to be removed
+        // until scriptName is the only one left.
+        while (TryReduceSubgraph()){}
 
         return subgraph.TopologicalSort().Select(x => _scriptsByName[x]).ToArray();
 
-        string[] GetNonMatchingSinks()
+        // We're "reducing" the subgraph by removing any sinks that aren't scriptName.
+        // as soon as the only sink left is scriptName, it can't be reduced further.
+        bool TryReduceSubgraph()
         {
-            return subgraph
+            var sinks = subgraph
                 .Sinks
                 .Where(x => x != scriptName)
                 .ToArray();
+
+            if (sinks.Any())
+            {
+                subgraph = subgraph.RemoveNodes(sinks);
+                return true;
+            }
+
+            return false;
         }
     }
 }

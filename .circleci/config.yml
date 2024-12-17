@@ -1,0 +1,46 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:8.0
+    steps:
+      - checkout
+      - run:
+          name: Tests
+          command:
+            dotnet test SqlOrder.Tests
+  publish:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:8.0
+    steps:
+      - checkout
+      - run:
+          name: Pack
+          command:
+            SANITIZED_VERSION=`echo $CIRCLE_TAG | sed "s/-alpha//"`
+            dotnet pack SqlOrder -p:PackageVersion=$CIRCLE_TAG -p:Version=$CIRCLE_TAG -p:AssemblyVersion=$SANITIZED_VERSION -o .
+      - run:
+          name: Publish
+          command:
+            dotnet nuget push SqlOrder.${CIRCLE_TAG}.nupkg -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+  publish:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /[0-9]+.[0-9]+.[0-9]+(-alpha)?/
+            branches:
+              ignore: /.*/
+      - publish:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /[0-9]+.[0-9]+.[0-9]+(-alpha)?/
