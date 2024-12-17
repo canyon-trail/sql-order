@@ -5,7 +5,7 @@ namespace SqlOrder;
 
 public sealed class ScriptOrderer
 {
-    public async Task<IEnumerable<Script>> OrderScripts(ICollection<Script> scripts, CancellationToken ct)
+    public async Task<SqlDependencyModel> BuildModel(ICollection<Script> scripts, CancellationToken ct)
     {
         var scriptsByName = scripts.ToDictionary(x => x.Name);
 
@@ -34,9 +34,14 @@ public sealed class ScriptOrderer
             dag = definition.AddEdgesToDag(dag);
         }
 
-        var ordering = dag.TopologicalSort();
+        return new SqlDependencyModel(scriptsByName, dag);
+    }
 
-        return ordering.Select(x => scriptsByName[x]).ToArray();
+    public async Task<IEnumerable<Script>> OrderScripts(ICollection<Script> scripts, CancellationToken ct)
+    {
+        var model = await BuildModel(scripts, ct);
+
+        return model.All;
     }
 
     private async Task<ICollection<Statement>> ParseScript(Script script, SqlParser parser, CancellationToken ct)
