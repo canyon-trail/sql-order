@@ -1,17 +1,24 @@
-﻿using SharpDag.CSharp;
+﻿using System.Collections.Immutable;
+using SharpDag.CSharp;
+using SqlOrder.AstTypes;
 
 namespace SqlOrder;
 
 public sealed class SqlDependencyModel
 {
-    private readonly IReadOnlyDictionary<string, Script> _scriptsByName;
-    private readonly Dag<string, Dependency> _dag;
+    private ImmutableDictionary<string, Script> _scriptsByName;
+    private Dag<string, Dependency> _dag;
+
+    public SqlDependencyModel()
+        : this(new Dictionary<string, Script>(), Dag<string, Dependency>.Empty)
+    {
+    }
 
     internal SqlDependencyModel(
         IReadOnlyDictionary<string, Script> scriptsByName,
         Dag<string, Dependency> dag)
     {
-        _scriptsByName = scriptsByName;
+        _scriptsByName = scriptsByName.ToImmutableDictionary();
         _dag = dag;
     }
 
@@ -55,5 +62,24 @@ public sealed class SqlDependencyModel
 
             return false;
         }
+    }
+
+    /// <summary>
+    /// Adds a dependency to the model so that <see cref="successor"/> depends
+    /// on <see cref="predecessor"/>. This causes <see cref="predecessor"/>
+    /// to always be ordered earlier than <see cref="successor"/>.
+    /// </summary>
+    public void AddDependency(Script predecessor, Script successor)
+    {
+        _scriptsByName = _scriptsByName
+            .Add(predecessor.Name, predecessor)
+            .Add(successor.Name, successor);
+
+        var edge = new TypedEdge<string, Dependency>(
+            src: predecessor.Name,
+            dest: successor.Name,
+            value: new Dependency(new ObjectName("custom", "custom"), DependencyKind.Custom));
+
+        _dag = _dag.AddEdge(edge);
     }
 }

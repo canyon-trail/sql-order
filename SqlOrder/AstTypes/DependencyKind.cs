@@ -8,5 +8,10 @@ public enum DependencyKind
     Procedure,
     UserOrRole,
     UserDefinedType,
-    Sequence
+    Sequence,
+    /// <summary>
+    /// Represents a custom-added dependency to force ordering to happen
+    /// in a particular way.
+    /// </summary>
+    Custom,
 }
