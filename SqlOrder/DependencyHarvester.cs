@@ -1,222 +1,162 @@
 ﻿using System.Collections.Immutable;
-using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
-using SqlOrder.AstTypes;
-using SqlOrder.SqlParserVisitors;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlOrder;
 
-/// <summary>
-/// Depth-first searches through an AST for dependencies. Does not use built-in
-/// visitor pattern since it doesn't support a depth-first search and we'd have
-/// to override basically EVERY method.
-/// </summary>
-/// <param name="cteNames">CTE names that should be ignored</param>
-internal sealed class DependencyHarvester(ImmutableArray<ObjectName> cteNames)
+public sealed class DependencyHarvester(ImmutableArray<string> cteNames)
 {
-    /// <summary>
-    /// Indicates whether the algorithm should keep descending to child nodes
-    /// or stop. In some cases we use a child harvester, so descending after
-    /// doing so would produce incorrect results.
-    /// </summary>
-    private enum DescendOption
+    public DependencyHarvester() : this([])
     {
-        Descend,
-        Stop
-    }
-    public DependencyHarvester() : this(ImmutableArray<ObjectName>.Empty)
-    {
+
     }
 
-    public ImmutableArray<Dependency> Harvest(SqlCodeObject codeObject)
+    public ImmutableArray<Dependency> Harvest(TSqlFragment node)
     {
-        return Harvest([codeObject], Dependency.EmptyArray).Distinct().ToImmutableArray();
+        var dependencies = new HashSet<Dependency>();
+        var visitor = new HarvestingVisitor(x => dependencies.Add(x), cteNames);
+
+        node.Accept(visitor);
+
+        return [..dependencies];
     }
 
-    private ImmutableArray<Dependency> Harvest(IEnumerable<SqlCodeObject> children, ImmutableArray<Dependency> context)
+    public ImmutableArray<Dependency> HarvestChildren(TSqlFragment node)
     {
-        foreach (var child in children)
+        var dependencies = new HashSet<Dependency>();
+        var visitor = new HarvestingVisitor(x => dependencies.Add(x), cteNames);
+
+        node.AcceptChildren(visitor);
+
+        return [..dependencies];
+    }
+
+    private sealed class HarvestingVisitor(Action<Dependency> onDependency, ImmutableArray<string> cteNames) : TSqlConcreteFragmentVisitor
+    {
+        public override void Visit(AlterTableAddTableElementStatement node)
         {
-            // uses dynamic dispatch to select the correct overload of HarvestSingle(...).
-            (context, var descend) = ((ImmutableArray<Dependency>, DescendOption))HarvestSingle((dynamic) child, context);
+            var tableName = ObjectName.FromSchemaObjectName(node.SchemaObjectName);
 
-            if (descend == DescendOption.Descend)
+            onDependency(tableName.ToTableDependency());
+        }
+
+        public override void Visit(ForeignKeyConstraintDefinition node)
+        {
+            var tableName = ObjectName.FromSchemaObjectName(node.ReferenceTableName);
+
+            onDependency(tableName.ToTableDependency());
+        }
+
+        public override void Visit(DeclareVariableElement node)
+        {
+            var dataType = ObjectName.FromSchemaObjectName(node.DataType.Name).ToUserDefinedTypeDependency();
+
+            if (Builtins.Types.Contains(dataType.Name))
             {
-                context = Harvest(child.Children, context);
+                return;
+            }
+
+            onDependency(dataType);
+        }
+
+        public override void Visit(NamedTableReference node)
+        {
+            if (node.SchemaObject.SchemaIdentifier == null)
+            {
+                if (cteNames.Contains(node.SchemaObject.BaseIdentifier.Value))
+                {
+                    return;
+                }
+            }
+
+            var tableDependency = ObjectName.FromSchemaObjectName(node.SchemaObject).ToTableDependency();
+
+            onDependency(tableDependency);
+        }
+
+        public override void Visit(SchemaObjectFunctionTableReference node)
+        {
+            var name = ObjectName.FromSchemaObjectName(node.SchemaObject);
+
+            onDependency(name.ToFunctionDependency());
+        }
+
+        public override void ExplicitVisit(SelectStatement node)
+        {
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
+        }
+
+        public override void ExplicitVisit(InsertStatement node)
+        {
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
+        }
+
+        private void HandleCtesAndAliases(TSqlFragment node, WithCtesAndXmlNamespaces withClause)
+        {
+            var aliases = HarvestAliases(node)
+                .Select(x => ObjectName.FromNullishSchema(null, x).ToTableDependency());
+            var newCtes = HarvestCtes(withClause);
+
+            var allCtes = cteNames.AddRange(newCtes);
+            var childHarvester = new DependencyHarvester(allCtes);
+            var dependencies = childHarvester.HarvestChildren(node)
+                .Except(aliases);
+
+            foreach (var d in dependencies)
+            {
+                onDependency(d);
             }
         }
 
-        return context;
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlCodeObject codeObject, ImmutableArray<Dependency> context)
-    {
-        return (context, DescendOption.Descend);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlVariableDeclaration codeObject, ImmutableArray<Dependency> context)
-    {
-        var typeIdentifier = codeObject.Type.DataType.ObjectIdentifier;
-
-        var type = ObjectName.FromSqlObjectIdentifier(typeIdentifier).ToUserDefinedTypeDependency();
-
-        if (Builtins.All.Contains(type))
+        public override void ExplicitVisit(UpdateStatement node)
         {
-            return (context, DescendOption.Descend);
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
         }
 
-        return (context.Add(type), DescendOption.Descend);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlInlineFunctionBodyDefinition codeObject, ImmutableArray<Dependency> context)
-    {
-        return HandleCtes(codeObject, context);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlTableRefExpression codeObject, ImmutableArray<Dependency> context)
-    {
-        var objectName = ObjectName.FromSqlObjectIdentifier(codeObject.ObjectIdentifier);
-
-        // if this is a reference to a CTE,
-        // it's not a dependency on a real table or view:
-        // ignore it.
-        if (cteNames.Contains(objectName))
+        public override void ExplicitVisit(MergeStatement node)
         {
-            return (context, DescendOption.Descend);
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
         }
 
-        var dependency = new Dependency(objectName, DependencyKind.TableOrView);
-
-        return (context.Add(dependency), DescendOption.Descend);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlTableValuedFunctionRefExpression codeObject, ImmutableArray<Dependency> context)
-    {
-        var objectName = ObjectName.FromSqlObjectIdentifier(codeObject.ObjectIdentifier);
-
-        var dependency = new Dependency(objectName, DependencyKind.Function);
-
-        if (Builtins.All.Contains(dependency))
+        public override void Visit(UserDataTypeReference node)
         {
-            return (context, DescendOption.Descend);
+            var name = ObjectName.FromSchemaObjectName(node.Name);
+
+            onDependency(name.ToUserDefinedTypeDependency());
         }
 
-        return (context.Add(dependency), DescendOption.Descend);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlParameterDeclaration codeObject, ImmutableArray<Dependency> context)
-    {
-        var name = ObjectName.FromSqlObjectIdentifier(codeObject.Type.DataType.ObjectIdentifier);
-
-        var typeDependency = name.ToUserDefinedTypeDependency();
-        if (Builtins.All.Contains(typeDependency))
+        private static HashSet<string> HarvestCtes(TSqlFragment? node)
         {
-            return (context, DescendOption.Descend);
+            var ctes = new HashSet<string>();
+            var cteHarvester = new CteHarvester(x => ctes.Add(x));
+            node?.Accept(cteHarvester);
+            return ctes;
         }
 
-        return (context.Add(typeDependency), DescendOption.Descend);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlMergeStatement codeObject, ImmutableArray<Dependency> context)
-    {
-        return HandleCtes(codeObject, context);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlSelectStatement codeObject, ImmutableArray<Dependency> context)
-    {
-        return HandleCtes(codeObject, context);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlInsertStatement codeObject, ImmutableArray<Dependency> context)
-    {
-        return HandleCtes(codeObject, context);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlDeleteStatement codeObject, ImmutableArray<Dependency> context)
-    {
-        return HandleUpdateAndDelete(codeObject, codeObject.DeleteSpecification.FromClause, context);
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HarvestSingle(SqlUpdateStatement codeObject, ImmutableArray<Dependency> context)
-    {
-        return HandleUpdateAndDelete(codeObject, codeObject.UpdateSpecification.FromClause, context);
-    }
-
-    /// <summary>
-    /// Harvests CTE names and excludes them from the dependencies
-    /// so that they aren't assumed to be actual tables or views.
-    /// </summary>
-    private (ImmutableArray<Dependency>, DescendOption) HandleCtes(SqlCodeObject codeObject, ImmutableArray<Dependency> context)
-    {
-        // visit CTE contents
-        var cteVisitor = new CommonTableExpressionHarvester();
-        var foundCteNames = cteVisitor.Descend(codeObject.Children);
-        if (foundCteNames.Any())
+        private static HashSet<string> HarvestAliases(TSqlFragment? node)
         {
-            var childHarvester = new DependencyHarvester(cteNames.AddRange(foundCteNames));
-
-            // note that we're calling Harvest on Children here; otherwise we'd get infinite recursion.
-            var childResults = childHarvester.Harvest(codeObject.Children, context);
-
-            // we need to stop descending since we use a child harvester to descend from here
-            return (context.AddRange(childResults), DescendOption.Stop);
+            var aliases = new HashSet<string>();
+            var harvester = new AliasHarvester(x => aliases.Add(x));
+            node?.Accept(harvester);
+            return aliases;
         }
-
-        return (context, DescendOption.Descend);
     }
 
-    private IEnumerable<SqlCodeObject> DepthFirstTraverse(SqlCodeObject codeObject)
+    private sealed class CteHarvester(Action<string> onCte) : TSqlConcreteFragmentVisitor
     {
-        foreach (var child in codeObject.Children)
+        public override void Visit(CommonTableExpression node)
         {
-            yield return child;
-            foreach (var descendant in DepthFirstTraverse(child))
+            onCte(node.ExpressionName.Value);
+        }
+    }
+
+    private sealed class AliasHarvester(Action<string> onAlias) : TSqlFragmentVisitor
+    {
+        public override void Visit(TableReferenceWithAlias node)
+        {
+            if (node.Alias != null)
             {
-                yield return descendant;
+                onAlias(node.Alias.Value);
             }
         }
-    }
-
-    private (ImmutableArray<Dependency>, DescendOption) HandleUpdateAndDelete(
-        SqlCodeObject codeObject,
-        SqlFromClause? fromClause,
-        ImmutableArray<Dependency> context
-    )
-    {
-        var otherCteNames = new CommonTableExpressionHarvester().Descend(codeObject.Children);
-
-        var aliases = GetTableAliases(fromClause);
-
-        var childHarvester = new DependencyHarvester(cteNames.Concat(otherCteNames).ToImmutableArray());
-        var childDependencies = childHarvester
-            .Harvest(codeObject.Children, Dependency.EmptyArray)
-            .Except(aliases)
-            ;
-
-        return (context.AddRange(childDependencies), DescendOption.Stop);
-    }
-
-    private ImmutableArray<Dependency> GetTableAliases(SqlFromClause? fromClause)
-    {
-        if (fromClause == null)
-        {
-            return Dependency.EmptyArray;
-        }
-
-        var tableRefAliases = DepthFirstTraverse(fromClause)
-            .OfType<SqlTableRefExpression>()
-            .Where(x => x.Alias != null)
-            .Select(x => x.Alias.Value)
-            .ToImmutableArray();
-
-        var tableVarAliases = DepthFirstTraverse(fromClause)
-            .OfType<SqlTableVariableRefExpression>()
-            .Where(x => x.Alias != null)
-            .Select(x => x.Alias.Value)
-            .ToImmutableArray();
-
-        return tableRefAliases
-            .Concat(tableVarAliases)
-            .Select(x => new ObjectName("dbo", x).ToTableDependency())
-            .ToImmutableArray();
     }
 }

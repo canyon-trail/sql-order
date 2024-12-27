@@ -12,18 +12,12 @@ public sealed class UserDefinedTypeParsingTests
             create type derp from varchar(5) not null;
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new UserDefinedTypeDefinition(
                 new ObjectName("dbo", "derp"),
-                Dependency.ArrayOf(
-                    ObjectName.Schema("dbo").ToSchemaDependency()
-                )
-            ),
-        });
+                []
+            )
+        );
     }
 
     [Fact]
@@ -36,18 +30,12 @@ public sealed class UserDefinedTypeParsingTests
             );
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new UserDefinedTypeDefinition(
                 new ObjectName("dbo", "derp"),
-                Dependency.ArrayOf(
-                    ObjectName.Schema("dbo").ToSchemaDependency()
-                )
-            ),
-        });
+                []
+            )
+        );
     }
 
     [Fact]
@@ -62,18 +50,13 @@ public sealed class UserDefinedTypeParsingTests
             );
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new UserDefinedTypeDefinition(
                 new ObjectName("dbo", "derp"),
-                Dependency.ArrayOf(
-                    ObjectName.Schema("dbo").ToSchemaDependency(),
+                [
                     new Dependency(new ObjectName("otherschema", "deptype"), DependencyKind.UserDefinedType)
-                )
-            ),
-        });
+                ]
+            )
+        );
     }
 }

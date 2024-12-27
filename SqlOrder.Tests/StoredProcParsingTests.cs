@@ -1,6 +1,4 @@
-﻿using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
-using Snapshooter.Xunit;
-using SqlOrder.AstTypes;
+﻿using SqlOrder.AstTypes;
 
 namespace SqlOrder.Tests;
 
@@ -17,18 +15,14 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("myschema", "myproc"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency()
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -42,18 +36,14 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(new ObjectName("myschema", "myproc"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency(),
                     new Dependency(new ObjectName("myschema", "sometable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -75,18 +65,14 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(new ObjectName("myschema", "myproc"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency(),
                     new Dependency(new ObjectName("myschema", "sometable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -103,18 +89,14 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(new ObjectName("myschema", "myproc"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency(),
                     new Dependency(new ObjectName("myschema", "sometable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -132,19 +114,15 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(new ObjectName("myschema", "myproc"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency(),
                     new Dependency(new ObjectName("myschema", "sometable"), DependencyKind.TableOrView),
                     new Dependency(new ObjectName("myschema", "othertable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -159,19 +137,15 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("myschema", "myproc"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency(),
                     new Dependency(new ObjectName("dbo", "sometype"), DependencyKind.UserDefinedType)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -206,21 +180,15 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("dbo", "myproc"),
                 Dependency.ArrayOf(
                     new ObjectName("myschema", "sometabletype").ToUserDefinedTypeDependency(),
                     new ObjectName("dbo", "sometable").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 
     [Fact]
@@ -237,20 +205,14 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("dbo", "myproc"),
                 Dependency.ArrayOf(
                     new ObjectName("dbo", "table1").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 
     [Fact]
@@ -269,28 +231,22 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("dbo", "myproc"),
                 Dependency.ArrayOf(
                     new ObjectName("dbo", "table1").ToTableDependency(),
                     new ObjectName("dbo", "table2").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 
     [Fact]
     public void UpdateFromRightAliasWithJoin()
     {
-        var sql = @"
-CREATE   proc myproc
+        const string sql = @"
+CREATE   proc proccy
 as
 begin
 
@@ -299,25 +255,18 @@ begin
 	from	table1 a
 			inner join table2 x on a.c = x.c
 	;
-
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
-                new ObjectName("dbo", "myproc"),
+                new ObjectName("dbo", "proccy"),
                 Dependency.ArrayOf(
                     new ObjectName("dbo", "table1").ToTableDependency(),
                     new ObjectName("dbo", "table2").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 
     [Fact]
@@ -338,20 +287,42 @@ begin
 end;
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("dbo", "myproc"),
                 Dependency.ArrayOf(
                     new ObjectName("dbo", "table1").ToTableDependency(),
                     new ObjectName("dbo", "table2").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
+    }
+
+    [Fact]
+    public void OutParamSetFromScalarQuery()
+    {
+        var sql = @"
+CREATE PROC myproc
+	@IsValid BIT = 0 OUTPUT
+AS
+  BEGIN
+	SET @IsValid = IIF(EXISTS (SELECT 1
+								 FROM tableA
+								 JOIN tableB on tableA.id = tableB.a_id
+								WHERE tableA.foo = 1
+								  AND tableB.bar = 'yes'), 1, 0);
+  END;
+
+";
+
+        sql.AssertParsesTo(
+            new ProcedureDefinition(
+                new ObjectName("dbo", "myproc"),
+                Dependency.ArrayOf(
+                    new ObjectName("dbo", "tableA").ToTableDependency(),
+                    new ObjectName("dbo", "tableB").ToTableDependency()
+                )
+            )
+        );
     }
 }

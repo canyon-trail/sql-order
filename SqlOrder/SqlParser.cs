@@ -1,24 +1,22 @@
-﻿using System.Collections.Immutable;
-using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
-using Microsoft.SqlServer.TransactSql.ScriptDom;
-using SqlOrder.AstTypes;
+﻿using Microsoft.SqlServer.TransactSql.ScriptDom;
 using SqlOrder.CodeDomVisitors;
-using SqlOrder.SqlParserVisitors;
 
 namespace SqlOrder;
 public sealed class SqlParser
 {
-    public IEnumerable<Statement> Parse(string sql)
+    public ParseResult Parse(string sql)
     {
-        var resultAst = ParseInternal(sql);
+        var ast = ParseInternal2(sql);
 
-        var definitions = StatementHarvestingVisitor.All.Aggregate(
-            ImmutableArray<Statement>.Empty,
-            (defs, visitor) => resultAst.Accept(visitor, defs)
-            );
+        var definitions = StatementHarvester.Harvest(ast);
 
-        var codeDomParser = new TSql160Parser(true, SqlEngineType.All);
-        var result = codeDomParser.Parse(new StringReader(sql), out var errors);
+        return new ParseResult(definitions, ast);
+    }
+
+    public static TSqlFragment ParseInternal2(string sql)
+    {
+        var parser = new TSql160Parser(true, SqlEngineType.All);
+        var result = parser.Parse(new StringReader(sql), out var errors);
 
         if (errors != null && errors.Any())
         {
@@ -26,22 +24,6 @@ public sealed class SqlParser
             throw new Exception($"Found errors: \n{string.Join("\n\t", errorMessages)}");
         }
 
-        var visitor = new AlterTableVisitor();
-        result.Accept(visitor);
-        definitions = definitions.AddRange(visitor.Statements);
-
-        return definitions;
-    }
-
-    public static SqlScript ParseInternal(string sql)
-    {
-        var resultAst = Microsoft.SqlServer.Management.SqlParser.Parser.Parser.Parse(sql);
-
-        if (resultAst.Errors.Any())
-        {
-            throw new InvalidOperationException($"parse error: {string.Join(", ", resultAst.Errors.Select(x => x.Message))}");
-        }
-
-        return resultAst.Script;
+        return result;
     }
 }

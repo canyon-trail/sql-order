@@ -48,7 +48,7 @@ public sealed class ScriptOrderer
     {
         try
         {
-            var definitions = parser.Parse(await script.GetScriptText(ct));
+            var definitions = parser.Parse(await script.GetScriptText(ct)).Statements;
 
             return definitions.ToArray();
         }

@@ -19,18 +19,14 @@ begin
 end
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new ObjectName("myschema", "sometable").ToTableDependency(),
                     new ObjectName("myschema", "sometype").ToUserDefinedTypeDependency(),
                     new ObjectName("dbo", "othertable").ToTableDependency()
                 )
-            ),
-        });
+            )
+        );
     }
 }

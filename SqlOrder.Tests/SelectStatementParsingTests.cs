@@ -11,17 +11,13 @@ public sealed class SelectStatementParsingTests
             select * from Table1
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new Dependency(new ObjectName("dbo", "Table1"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -31,17 +27,13 @@ public sealed class SelectStatementParsingTests
             select * from someschema.Table1 t1
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new Dependency(new ObjectName("someschema", "Table1"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -52,18 +44,14 @@ public sealed class SelectStatementParsingTests
             inner join table2 on t2.a = t1.b
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new Dependency(new ObjectName("someschema", "Table1"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("table2"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -75,19 +63,15 @@ public sealed class SelectStatementParsingTests
             inner join table3 on t3.a = t1.b
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new Dependency(new ObjectName("someschema", "Table1"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("table2"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("table3"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -100,19 +84,15 @@ public sealed class SelectStatementParsingTests
             inner join table3 on t3.a = t1.b
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("table2"), DependencyKind.TableOrView),
                     new Dependency(new ObjectName("someschema", "Table1"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("table3"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -127,18 +107,14 @@ public sealed class SelectStatementParsingTests
             inner join table3 on t3.a = t1.b
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("table2"), DependencyKind.TableOrView),
                     new Dependency(new ObjectName("someschema", "Table1"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("table3"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.SqlServer.Management.SqlParser.Parser;
-using SqlOrder.AstTypes;
+﻿using SqlOrder.AstTypes;
 
 namespace SqlOrder.Tests;
 
@@ -15,16 +14,13 @@ public sealed class AlterTableParsingTests
             [otherschema].[othertable] ([keycolumn])
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new Statement(
                 Dependency.ArrayOf(
+                    new ObjectName("dbo", "sometable").ToTableDependency(),
                     new ObjectName("otherschema", "othertable").ToTableDependency()
                 )
-            ),
-        });
+            )
+        );
     }
 }

@@ -13,17 +13,13 @@ as
 select * from table1;
  ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new TableOrViewDefinition(new ObjectName("exampleschema", "exampleview"),
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("table1"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -36,18 +32,12 @@ with x as (select * from table1)
 select * from x;
  ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new TableOrViewDefinition(new ObjectName("exampleschema", "exampleview"),
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("table1"), DependencyKind.TableOrView)
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 }

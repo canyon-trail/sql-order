@@ -1,5 +1,5 @@
 using System.Collections.Immutable;
-using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 using SqlOrder.AstTypes;
 
 namespace SqlOrder;
@@ -36,9 +36,9 @@ public sealed class ObjectName : IComparable, IEquatable<ObjectName?>
         return new ObjectName(DefaultSchema.DefaultSchemaName, name);
     }
 
-    public static ObjectName FromSqlObjectIdentifier(SqlObjectIdentifier name)
+    public static ObjectName FromSchemaObjectName(SchemaObjectName typeName)
     {
-        return FromNullishSchema(name.SchemaName?.Value, name.ObjectName.Value);
+        return FromNullishSchema(typeName.SchemaIdentifier?.Value, typeName.BaseIdentifier.Value);
     }
 
     public static ObjectName FromNullishSchema(string? schema, string name)
@@ -98,6 +98,11 @@ public sealed class ObjectName : IComparable, IEquatable<ObjectName?>
     public Dependency ToUserDefinedTypeDependency()
     {
         return ToDependency(DependencyKind.UserDefinedType);
+    }
+
+    public Dependency ToFunctionDependency()
+    {
+        return ToDependency(DependencyKind.Function);
     }
 
     private Dependency ToDependency(DependencyKind kind)

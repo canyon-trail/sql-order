@@ -5,6 +5,24 @@ namespace SqlOrder.Tests;
 public sealed class FunctionParsingTests
 {
     [Fact]
+    public void SimpleScalar()
+    {
+        var sql = @"
+            create function foo() returns int begin return 0 end;
+            go;
+            create function custom_schema.foo() returns int begin return 0 end;
+        ";
+
+        sql.AssertParsesTo(
+            new FunctionDefinition(new ObjectName("dbo", "foo"), Dependency.EmptyArray),
+            new FunctionDefinition(
+                new ObjectName("custom_schema", "foo"),
+                Dependency.ArrayOf(
+                    new Dependency(ObjectName.Schema("custom_schema"), DependencyKind.Schema)))
+        );
+    }
+
+    [Fact]
     public void FunctionWithSelectStatement()
     {
         var sql = @"
@@ -17,17 +35,13 @@ public sealed class FunctionParsingTests
             end
          ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new FunctionDefinition(ObjectName.NoSchema("DoTheThing"),
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("SomeTable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -52,18 +66,14 @@ RETURN
 
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new FunctionDefinition(ObjectName.NoSchema("GetTheThing"),
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("TheTable"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("TheOtherTable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -89,18 +99,14 @@ RETURN
 
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new FunctionDefinition(ObjectName.NoSchema("GetTheThing"),
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("TheTable"), DependencyKind.TableOrView),
                     new Dependency(ObjectName.NoSchema("TheOtherTable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -118,17 +124,13 @@ RETURN
             end
          ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new FunctionDefinition(ObjectName.NoSchema("DoTheThing"),
                 Dependency.ArrayOf(
                     new Dependency(ObjectName.NoSchema("SomeTable"), DependencyKind.TableOrView)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -171,21 +173,15 @@ RETURN
             );
          ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new FunctionDefinition(ObjectName.NoSchema("DoTheThing"),
                 Dependency.ArrayOf(
                     ObjectName.NoSchema("innertable1").ToTableDependency(),
                     ObjectName.NoSchema("innertable2").ToTableDependency(),
                     ObjectName.NoSchema("innertable3").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 
     [Fact]
@@ -207,21 +203,15 @@ RETURN
             );
         ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        var reason = SqlParser.ParseInternal(sql).Simplify().Stringify();
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new ProcedureDefinition(
                 new ObjectName("dbo", "somefunction"),
                 Dependency.ArrayOf(
                     new ObjectName("dbo", "table1").ToTableDependency(),
                     new ObjectName("dbo", "othertable").ToTableDependency()
                 )
-            ),
-        }, reason);
+            )
+        );
     }
 
     [Fact]
@@ -237,17 +227,13 @@ RETURN
             end
          ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
+        sql.AssertParsesTo(
             new FunctionDefinition(ObjectName.NoSchema("DoTheThing"),
                 Dependency.ArrayOf(
                     new Dependency(new ObjectName("myschema", "SomeTableFunction"), DependencyKind.Function)
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -263,12 +249,8 @@ RETURN
             end
          ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[] {
-            new FunctionDefinition(ObjectName.NoSchema("DoTheThing"), Dependency.EmptyArray),
-        });
+        sql.AssertParsesTo(
+            new FunctionDefinition(ObjectName.NoSchema("DoTheThing"), Dependency.EmptyArray)
+        );
     }
 }

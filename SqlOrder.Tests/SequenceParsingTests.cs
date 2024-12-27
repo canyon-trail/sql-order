@@ -19,19 +19,14 @@ CACHE
 GO
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[]
-        {
+        sql.AssertParsesTo(
             new SequenceDefinition(
                 new ObjectName("myschema", "myseq"),
                 Dependency.ArrayOf(
                     ObjectName.Schema("myschema").ToSchemaDependency()
                 )
-            ),
-        });
+            )
+        );
     }
 
     [Fact]
@@ -49,16 +44,11 @@ CACHE
 GO
 ";
 
-        var parser = new SqlParser();
-
-        var results = parser.Parse(sql);
-
-        results.Should().BeEquivalentTo(new[]
-        {
+        sql.AssertParsesTo(
             new SequenceDefinition(
                 new ObjectName("dbo", "myseq"),
                 Dependency.EmptyArray
-            ),
-        });
+            )
+        );
     }
 }
