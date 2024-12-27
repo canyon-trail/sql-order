@@ -76,6 +76,26 @@ end;
     }
 
     [Fact]
+    public void DeleteFromTempTableWithAlias()
+    {
+        var sql = @"
+create procedure [myschema].[myproc]
+as
+begin
+    delete tablealias from #sometable tablealias
+    where foo = bar;
+end;
+";
+
+        sql.AssertParsesTo(
+            new ProcedureDefinition(
+                new ObjectName("myschema", "myproc"),
+                DefaultSchema.GetDependency("myschema")
+            )
+        );
+    }
+
+    [Fact]
     public void SimpleInsert()
     {
         var sql = @"
@@ -324,5 +344,22 @@ AS
                 )
             )
         );
+    }
+
+    [Fact]
+    public void CreateOrAlterProcedure()
+    {
+        var sql = @"
+create or alter procedure proccy
+@UserID int
+as
+begin
+    select * from table1
+end;
+";
+        sql.AssertParsesTo(new ProcedureDefinition(
+            new ObjectName("dbo", "proccy"),
+            [new ObjectName("dbo", "table1").ToTableDependency()]
+        ));
     }
 }

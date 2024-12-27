@@ -63,29 +63,14 @@ internal sealed class TopLevelVisitor(Action<Statement> onStatement) : TSqlConcr
         AddStatement(declaration);
     }
 
+    public override void ExplicitVisit(CreateOrAlterProcedureStatement node)
+    {
+        HandleProcedure(node);
+    }
+
     public override void ExplicitVisit(CreateProcedureStatement node)
     {
-        var name = ObjectName.FromSchemaObjectName(node.ProcedureReference.Name);
-        var harvester = new DependencyHarvester();
-
-        var dependencies = harvester.Harvest(node)
-            // skip temp tables
-            .Where(x => !x.Name.Name.StartsWith("#"))
-            .ToImmutableArray()
-            ;
-        var schemaDependency = ObjectName.Schema(name.SchemaName).ToSchemaDependency();
-
-        if (!schemaDependency.Name.Equals(DefaultSchema.ObjectName))
-        {
-            dependencies = dependencies.Insert(0, schemaDependency);
-        }
-
-        var definition = new ProcedureDefinition(
-            name,
-            dependencies
-        );
-
-        AddStatement(definition);
+        HandleProcedure(node);
     }
 
     public override void ExplicitVisit(CreateTypeTableStatement node)
@@ -165,6 +150,13 @@ internal sealed class TopLevelVisitor(Action<Statement> onStatement) : TSqlConcr
         AddStatement(new Statement(dependencies));
     }
 
+    public override void ExplicitVisit(GrantStatement node)
+    {
+        var dependencies = new DependencyHarvester().Harvest(node);
+
+        AddStatement(new Statement(dependencies));
+    }
+
     private void AddStatement(Statement statement) => AddStatements([statement]);
 
     private void AddStatements(IEnumerable<Statement> statements)
@@ -173,6 +165,31 @@ internal sealed class TopLevelVisitor(Action<Statement> onStatement) : TSqlConcr
         {
             onStatement(statement);
         }
+    }
+
+    private void HandleProcedure(ProcedureStatementBody node)
+    {
+        var name = ObjectName.FromSchemaObjectName(node.ProcedureReference.Name);
+        var harvester = new DependencyHarvester();
+
+        var dependencies = harvester.Harvest(node)
+                // skip temp tables
+                .Where(x => !x.Name.Name.StartsWith("#"))
+                .ToImmutableArray()
+            ;
+        var schemaDependency = ObjectName.Schema(name.SchemaName).ToSchemaDependency();
+
+        if (!schemaDependency.Name.Equals(DefaultSchema.ObjectName))
+        {
+            dependencies = dependencies.Insert(0, schemaDependency);
+        }
+
+        var definition = new ProcedureDefinition(
+            name,
+            dependencies
+        );
+
+        AddStatement(definition);
     }
 
     private string GetSchemaName(Identifier? identifier)

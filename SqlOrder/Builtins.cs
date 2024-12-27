@@ -53,6 +53,7 @@ public sealed class Builtins
         new ObjectName("dbo", "sysname"),
         new ObjectName("dbo", "xml"),
         new ObjectName("dbo", "sql_variant"),
+        new ObjectName("dbo", "hierarchyid"),
     }.ToImmutableHashSet();
 
     public static readonly ImmutableHashSet<ObjectName> Functions = new[]

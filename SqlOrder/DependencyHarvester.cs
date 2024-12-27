@@ -62,7 +62,14 @@ public sealed class DependencyHarvester(ImmutableArray<string> cteNames)
         {
             if (node.SchemaObject.SchemaIdentifier == null)
             {
-                if (cteNames.Contains(node.SchemaObject.BaseIdentifier.Value))
+                var baseTableName = node.SchemaObject.BaseIdentifier.Value;
+                if (cteNames.Contains(baseTableName))
+                {
+                    return;
+                }
+
+                // temp table
+                if (baseTableName.StartsWith("#"))
                 {
                     return;
                 }
@@ -90,6 +97,55 @@ public sealed class DependencyHarvester(ImmutableArray<string> cteNames)
             HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
         }
 
+        public override void ExplicitVisit(UpdateStatement node)
+        {
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
+        }
+
+        public override void ExplicitVisit(MergeStatement node)
+        {
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
+        }
+
+        public override void ExplicitVisit(DeleteStatement node)
+        {
+            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
+        }
+
+        public override void Visit(UserDataTypeReference node)
+        {
+            var name = ObjectName.FromSchemaObjectName(node.Name);
+
+            onDependency(name.ToUserDefinedTypeDependency());
+        }
+
+        public override void ExplicitVisit(SecurityPrincipal node)
+        {
+            var name = ObjectName.NoSchema(node.Identifier.Value);
+
+            onDependency(name.ToUserOrRoleDependency());
+        }
+
+        public override void ExplicitVisit(SecurityTargetObject node)
+        {
+            var identifiers = node.ObjectName.MultiPartIdentifier.Identifiers;
+            var baseName = identifiers.Last();
+            var schemaName = identifiers.Count > 1 ? identifiers[-2] : null;
+
+            var name = ObjectName.FromNullishSchema(schemaName?.Value, baseName.Value);
+
+            var dependency = node.ObjectKind switch
+            {
+                SecurityObjectKind.Schema => ObjectName.Schema(baseName.Value).ToSchemaDependency(),
+                _ => null,
+            };
+
+            if (dependency != null)
+            {
+                onDependency(dependency);
+            }
+        }
+
         private void HandleCtesAndAliases(TSqlFragment node, WithCtesAndXmlNamespaces withClause)
         {
             var aliases = HarvestAliases(node)
@@ -105,23 +161,6 @@ public sealed class DependencyHarvester(ImmutableArray<string> cteNames)
             {
                 onDependency(d);
             }
-        }
-
-        public override void ExplicitVisit(UpdateStatement node)
-        {
-            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
-        }
-
-        public override void ExplicitVisit(MergeStatement node)
-        {
-            HandleCtesAndAliases(node, node.WithCtesAndXmlNamespaces);
-        }
-
-        public override void Visit(UserDataTypeReference node)
-        {
-            var name = ObjectName.FromSchemaObjectName(node.Name);
-
-            onDependency(name.ToUserDefinedTypeDependency());
         }
 
         private static HashSet<string> HarvestCtes(TSqlFragment? node)

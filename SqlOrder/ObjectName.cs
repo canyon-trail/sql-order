@@ -105,6 +105,11 @@ public sealed class ObjectName : IComparable, IEquatable<ObjectName?>
         return ToDependency(DependencyKind.Function);
     }
 
+    public Dependency ToUserOrRoleDependency()
+    {
+        return ToDependency(DependencyKind.UserOrRole);
+    }
+
     private Dependency ToDependency(DependencyKind kind)
     {
         return new Dependency(this, kind);
